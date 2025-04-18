@@ -1,0 +1,85 @@
+{
+    "name": "wiensa/hepsiburada-sp-api",
+    "description": "Hepsiburada Marketplace Satıcı Paneli API entegrasyonu için Laravel paketi",
+    "keywords": [
+        "laravel",
+        "hepsiburada",
+        "marketplace",
+        "api",
+        "e-commerce",
+        "satıcı paneli",
+        "entegrasyon"
+    ],
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Your Name",
+            "email": "your.email@example.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "HepsiburadaApi\\HepsiburadaSpApi\\": "src/"
+        },
+        "files": [
+            "./helpers.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "HepsiburadaApi\\HepsiburadaSpApi\\Tests\\": "tests"
+        }
+    },
+    "require": {
+        "php": "^8.3",
+        "guzzlehttp/guzzle": "^7.8",
+        "illuminate/support": "^10.0|^11.0"
+    },
+    "require-dev": {
+        "laravel/framework": "^11",
+        "laravel/pint": "^1.13.7",
+        "orchestra/testbench": "^9.0",
+        "pestphp/pest": "^2.28.1",
+        "phpstan/phpstan": "1.10.56",
+        "rector/rector": "0.19.5"
+    },
+    "scripts": {
+        "refactor": "rector",
+        "test:refactor": "rector --dry-run",
+        "test:types": "phpstan analyse --ansi",
+        "test:unit": "pest --colors=always",
+        "test:lint": "pint --test",
+        "test": [
+            "@test:refactor",
+            "@test:lint",
+            "@test:types",
+            "@test:unit"
+        ],
+        "fix:lint": "pint --preset laravel",
+        "fix:refactor": "rector",
+        "fix": [
+            "@fix:refactor",
+            "@fix:lint"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "HepsiburadaApi\\HepsiburadaSpApi\\Providers\\HepsiburadaApiServiceProvider"
+            ],
+            "aliases": {
+                "HepsiburadaApi": "HepsiburadaApi\\HepsiburadaSpApi\\Facades\\HepsiburadaApi"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "preferred-install": "dist",
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
