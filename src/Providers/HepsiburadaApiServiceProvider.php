@@ -4,40 +4,102 @@ namespace HepsiburadaApi\HepsiburadaSpApi\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use HepsiburadaApi\HepsiburadaSpApi\HepsiburadaApi;
+use HepsiburadaApi\HepsiburadaSpApi\Console\InstallCommand;
+use HepsiburadaApi\HepsiburadaSpApi\Console\TestConnectionCommand;
 
 class HepsiburadaApiServiceProvider extends ServiceProvider
 {
+    /**
+     * Servis sağlayıcısına ilişkilendirilmiş konfigürasyon dosyalarının yolu
+     * 
+     * @var string
+     */
+    protected string $config_path;
+
+    /**
+     * Servis sağlayıcısı örneği oluşturur
+     * 
+     * @param \Illuminate\Contracts\Foundation\Application $app
+     */
+    public function __construct($app)
+    {
+        parent::__construct($app);
+        $this->config_path = dirname(__DIR__, 2) . '/config/hepsiburada-api.php';
+    }
+
+    /**
+     * Bootstrap metodu - paketi uygulama için hazırlar
+     * 
+     * @return void
+     */
     public function boot(): void
     {
         $this->publishConfig();
+        $this->registerCommands();
     }
 
+    /**
+     * Register metodu - paketin servislerini kaydeder
+     * 
+     * @return void
+     */
     public function register(): void
     {
         $this->registerConfig();
         $this->registerBindings();
     }
 
-    // Boot methods :
+    /**
+     * Konfigürasyon dosyalarını yayınlar
+     * 
+     * @return void
+     */
     private function publishConfig(): void
     {
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                dirname(__DIR__, 2).'/config/hepsiburada-api.php' => config_path('hepsiburada-api.php'),
+                $this->config_path => config_path('hepsiburada-api.php'),
             ], 'hepsiburada-api-config');
         }
     }
 
-    // Register methods :
-    private function registerConfig(): void
+    /**
+     * Artisan komutlarını kaydeder
+     * 
+     * @return void
+     */
+    private function registerCommands(): void
     {
-        $this->mergeConfigFrom(dirname(__DIR__, 2).'/config/hepsiburada-api.php', 'hepsiburada-api');
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                InstallCommand::class,
+                TestConnectionCommand::class,
+            ]);
+        }
     }
 
+    /**
+     * Konfigürasyon dosyalarını kaydeder
+     * 
+     * @return void
+     */
+    private function registerConfig(): void
+    {
+        $this->mergeConfigFrom($this->config_path, 'hepsiburada-api');
+    }
+
+    /**
+     * Servis bağlamalarını kaydeder
+     * 
+     * @return void
+     */
     private function registerBindings(): void
     {
         $this->app->singleton(HepsiburadaApi::class, function ($app) {
             return new HepsiburadaApi(config('hepsiburada-api'));
         });
+
+        // Paketin alias olarak kısa yoldan erişimini sağlar
+        $this->app->alias(HepsiburadaApi::class, 'hepsiburada-api');
     }
 }

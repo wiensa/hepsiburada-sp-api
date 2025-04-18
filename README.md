@@ -8,6 +8,10 @@ Bu Laravel paketi, [Hepsiburada Marketplace API](https://developers.hepsiburada.
 - Ürün bilgilerini gönderme ve sorgulama
 - Listing (ürün listeleme) işlemleri
 - Sipariş yönetimi
+- Talep ve iade yönetimi (Claims)
+- Finans ve muhasebe işlemleri
+- Raporlama
+- Taşıma ve lojistik işlemleri
 - Kolay entegrasyon ve kullanım
 - Laravel 10+ ve PHP 8.3+ desteği
 
@@ -16,7 +20,7 @@ Bu Laravel paketi, [Hepsiburada Marketplace API](https://developers.hepsiburada.
 Composer ile paketi projenize ekleyin:
 
 ```bash
-composer require yourname/hepsiburada-sp-api
+composer require wiensa/hepsiburada-sp-api
 ```
 
 Laravel 10.x ve üzeri için otomatik olarak servis sağlayıcı kaydedilecektir. Laravel 10'dan önceki sürümleri kullanıyorsanız, `config/app.php` dosyasına aşağıdaki servis sağlayıcıyı manuel olarak ekleyin:
@@ -24,12 +28,12 @@ Laravel 10.x ve üzeri için otomatik olarak servis sağlayıcı kaydedilecektir
 ```php
 'providers' => [
     // ...
-    YourName\HepsiburadaApi\Providers\HepsiburadaApiServiceProvider::class,
+    HepsiburadaApi\HepsiburadaSpApi\Providers\HepsiburadaApiServiceProvider::class,
 ],
 
 'aliases' => [
     // ...
-    'HepsiburadaApi' => YourName\HepsiburadaApi\Facades\HepsiburadaApi::class,
+    'HepsiburadaApi' => HepsiburadaApi\HepsiburadaSpApi\Facades\HepsiburadaApi::class,
 ],
 ```
 
@@ -77,7 +81,7 @@ $orders = HepsiburadaApi::orders()->getCompletedOrders();
 ### DI Container ile Kullanım
 
 ```php
-use YourName\HepsiburadaApi\HepsiburadaApi;
+use HepsiburadaApi\HepsiburadaSpApi\HepsiburadaApi;
 
 class ProductController extends Controller
 {
@@ -181,7 +185,9 @@ $orderDetails = HepsiburadaApi::orders()->getOrderDetails('siparis_numarasi');
 // Ürünleri paketle
 $response = HepsiburadaApi::orders()->packageItems([
     'merchantId' => 'satici_id',
-    'lines' => [
+    'packageQuantity' => 1,
+    'deci' => 3.5,
+    'lineItems' => [
         // Paketlenecek ürün kalemleri
     ]
 ]);
@@ -192,6 +198,89 @@ $response = HepsiburadaApi::orders()->markAsShipped([
     'packageNumber' => 'paket_numarasi',
     'shippingCompany' => 'kargo_firmasi',
     'trackingNumber' => 'takip_numarasi'
+]);
+```
+
+### Talep ve İade İşlemleri (Yeni)
+
+```php
+// Tüm talepleri listele
+$claims = HepsiburadaApi::claims()->getClaims();
+
+// Talep detayını görüntüle
+$claimDetails = HepsiburadaApi::claims()->getClaimDetails('claim_id');
+
+// Talebe yanıt gönder
+$response = HepsiburadaApi::claims()->respondToClaim([
+    'claimId' => 'claim_id',
+    'merchantId' => 'merchant_id',
+    'response' => 'ACCEPTED',
+    'message' => 'Talebiniz onaylandı'
+]);
+
+// İade taleplerini listele
+$returnRequests = HepsiburadaApi::claims()->getReturnRequests();
+```
+
+### Finans ve Muhasebe İşlemleri (Yeni)
+
+```php
+// İşlem geçmişini listele
+$transactions = HepsiburadaApi::finances()->getTransactions([
+    'beginDate' => '2023-01-01',
+    'endDate' => '2023-12-31'
+]);
+
+// Ödeme özeti al
+$paymentSummary = HepsiburadaApi::finances()->getPaymentSummary();
+
+// Ödeme detayını görüntüle
+$paymentDetails = HepsiburadaApi::finances()->getPaymentDetails('payment_id');
+
+// Fatura bilgilerini listele
+$invoices = HepsiburadaApi::finances()->getInvoices();
+```
+
+### Raporlama İşlemleri (Yeni)
+
+```php
+// Satış performans raporu al
+$salesReport = HepsiburadaApi::reports()->getSalesPerformance();
+
+// Sipariş raporu al
+$orderReport = HepsiburadaApi::reports()->getOrderReport([
+    'beginDate' => '2023-01-01',
+    'endDate' => '2023-12-31'
+]);
+
+// Ürün performans raporu al
+$productReport = HepsiburadaApi::reports()->getProductPerformance();
+
+// Özel rapor oluştur
+$customReport = HepsiburadaApi::reports()->createCustomReport([
+    'reportType' => 'CUSTOM',
+    'dateRange' => 'LAST_30_DAYS',
+    'fields' => ['orderNumber', 'orderDate', 'status']
+]);
+```
+
+### Taşıma ve Lojistik İşlemleri (Yeni)
+
+```php
+// Kargo şirketlerini listele
+$carriers = HepsiburadaApi::logistics()->getCarriers();
+
+// Kargo takip bilgilerini güncelle
+$trackingUpdate = HepsiburadaApi::logistics()->updateTrackingInfo([
+    'packageNumber' => 'package_number',
+    'trackingNumber' => 'tracking_number',
+    'carrierCode' => 'ARAS'
+]);
+
+// Kargo etiketi oluştur
+$shippingLabel = HepsiburadaApi::logistics()->createShippingLabel([
+    'packageNumber' => 'package_number',
+    'format' => 'PDF'
 ]);
 ```
 

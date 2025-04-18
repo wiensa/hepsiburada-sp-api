@@ -150,6 +150,23 @@ class OrderService
     }
 
     /**
+     * İade edilmiş siparişleri listeler
+     *
+     * @param array $params Sorgu parametreleri
+     * @return array|null
+     */
+    public function getReturnedOrders(array $params = []): ?array
+    {
+        $query = array_merge([
+            'merchantId' => $this->api->getMerchantId(),
+            'page' => 0,
+            'size' => 100,
+        ], $params);
+
+        return $this->get('/orders/merchant/returned-orders', $query);
+    }
+
+    /**
      * Siparişe ait detayları listeler
      *
      * @param string $order_number Sipariş numarası
@@ -252,39 +269,93 @@ class OrderService
      */
     public function sendInvoiceLink(array $invoice_data): ?array
     {
-        return $this->put('/orders/merchant/invoice-link', $invoice_data);
+        return $this->post('/orders/merchant/invoice-links', $invoice_data);
     }
 
     /**
-     * Paket bölme işlemi yapar
+     * Paketi böler
      *
      * @param array $split_data Bölme verileri
      * @return array|null
      */
     public function splitPackage(array $split_data): ?array
     {
-        return $this->post('/orders/merchant/split-package', $split_data);
+        return $this->post('/orders/merchant/package-split', $split_data);
     }
 
     /**
-     * Paket bozma işlemi yapar
+     * Paketi açar (unpack)
      *
-     * @param array $unpack_data Bozma verileri
+     * @param array $unpack_data Paket açma verileri
      * @return array|null
      */
     public function unpackPackage(array $unpack_data): ?array
     {
-        return $this->post('/orders/merchant/unpack', $unpack_data);
+        return $this->post('/orders/merchant/package-unpack', $unpack_data);
     }
-
+    
     /**
-     * İptal bilgisi gönderir
+     * İptal bilgisini iletir
      *
      * @param array $cancel_data İptal verileri
      * @return array|null
      */
     public function sendCancellationInfo(array $cancel_data): ?array
     {
-        return $this->post('/orders/merchant/cancel', $cancel_data);
+        return $this->post('/orders/merchant/cancel-info', $cancel_data);
+    }
+
+    /**
+     * İade kabul bilgisini iletir
+     *
+     * @param array $return_approval_data İade kabul verileri
+     * @return array|null
+     */
+    public function approveReturn(array $return_approval_data): ?array
+    {
+        return $this->post('/orders/merchant/return-approval', $return_approval_data);
+    }
+
+    /**
+     * İade ret bilgisini iletir
+     *
+     * @param array $return_rejection_data İade ret verileri
+     * @return array|null
+     */
+    public function rejectReturn(array $return_rejection_data): ?array
+    {
+        return $this->post('/orders/merchant/return-rejection', $return_rejection_data);
+    }
+
+    /**
+     * İade detaylarını alır
+     *
+     * @param string $return_id İade ID
+     * @param string|null $merchant_id Satıcı ID (opsiyonel, belirtilmezse config'ten alınır)
+     * @return array|null
+     */
+    public function getReturnDetails(string $return_id, ?string $merchant_id = null): ?array
+    {
+        $query = [
+            'merchantId' => $merchant_id ?? $this->api->getMerchantId(),
+            'returnId' => $return_id,
+        ];
+
+        return $this->get('/orders/merchant/return-details', $query);
+    }
+    
+    /**
+     * Sipariş özeti bilgilerini alır
+     *
+     * @param array $params Sorgu parametreleri (tarih aralığı vs.)
+     * @return array|null
+     */
+    public function getOrderSummary(array $params = []): ?array
+    {
+        $query = array_merge([
+            'merchantId' => $this->api->getMerchantId(),
+        ], $params);
+
+        return $this->get('/orders/merchant/order-summary', $query);
     }
 } 

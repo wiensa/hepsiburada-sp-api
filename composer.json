@@ -39,8 +39,11 @@
     "require-dev": {
         "laravel/framework": "^11",
         "laravel/pint": "^1.13.7",
+        "mockery/mockery": "^1.6",
         "orchestra/testbench": "^9.0",
         "pestphp/pest": "^2.28.1",
+        "pestphp/pest-plugin-laravel": "^2.2",
+        "pestphp/pest-plugin-mock": "^2.0",
         "phpstan/phpstan": "1.10.56",
         "rector/rector": "0.19.5"
     },
@@ -48,13 +51,16 @@
         "refactor": "rector",
         "test:refactor": "rector --dry-run",
         "test:types": "phpstan analyse --ansi",
-        "test:unit": "pest --colors=always",
+        "test:unit": "pest --colors=always --testsuite=Unit",
+        "test:feature": "pest --colors=always --testsuite=Feature",
+        "test:coverage": "pest --coverage --colors=always",
         "test:lint": "pint --test",
         "test": [
             "@test:refactor",
             "@test:lint",
             "@test:types",
-            "@test:unit"
+            "@test:unit",
+            "@test:feature"
         ],
         "fix:lint": "pint --preset laravel",
         "fix:refactor": "rector",
