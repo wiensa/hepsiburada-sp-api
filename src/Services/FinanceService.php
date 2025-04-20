@@ -2,7 +2,7 @@
 
 namespace HepsiburadaApi\HepsiburadaSpApi\Services;
 
-use HepsiburadaApi\HepsiburadaSpApi\HepsiburadaApi;
+use HepsiburadaApi\HepsiburadaSpApi\Contracts\HepsiburadaApiInterface;
 use HepsiburadaApi\HepsiburadaSpApi\Traits\ApiRequest;
 
 class FinanceService
@@ -12,9 +12,9 @@ class FinanceService
     /**
      * API istemcisi
      *
-     * @var HepsiburadaApi
+     * @var HepsiburadaApiInterface
      */
-    protected HepsiburadaApi $api;
+    protected HepsiburadaApiInterface $api;
     
     /**
      * HTTP istemcisi
@@ -24,7 +24,7 @@ class FinanceService
     /**
      * FinanceService sınıfı yapıcı fonksiyonu
      */
-    public function __construct(HepsiburadaApi $api)
+    public function __construct(HepsiburadaApiInterface $api)
     {
         $this->api = $api;
         $this->http_client = $api->getHttpClient();

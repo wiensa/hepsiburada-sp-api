@@ -7,16 +7,16 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
 use HepsiburadaApi\HepsiburadaSpApi\Contracts\HepsiburadaApiInterface;
 use HepsiburadaApi\HepsiburadaSpApi\HepsiburadaApi;
-use HepsiburadaApi\HepsiburadaSpApi\Services\OrderService;
+use HepsiburadaApi\HepsiburadaSpApi\Services\FinanceService;
 
-test('OrderService sınıfı doğru şekilde başlatılır', function () {
+test('FinanceService sınıfı doğru şekilde başlatılır', function () {
     $api = new HepsiburadaApi(getConfig());
-    $order_service = new OrderService($api);
+    $finance_service = new FinanceService($api);
 
-    expect($order_service)->toBeInstanceOf(OrderService::class);
+    expect($finance_service)->toBeInstanceOf(FinanceService::class);
 });
 
-test('getCompletedOrders doğru şekilde çalışır', function () {
+test('getTransactions doğru şekilde çalışır', function () {
     $mock_client = Mockery::mock(Client::class);
     $mock_api = Mockery::mock(HepsiburadaApiInterface::class);
     
@@ -24,15 +24,17 @@ test('getCompletedOrders doğru şekilde çalışır', function () {
         'content' => [
             [
                 'id' => 1,
-                'orderNumber' => 'HBT12345',
-                'orderDate' => '2023-08-01',
-                'status' => 'COMPLETED',
+                'transactionId' => 'TRX12345',
+                'transactionDate' => '2023-08-01',
+                'amount' => 149.99,
+                'type' => 'SALE',
             ],
             [
                 'id' => 2,
-                'orderNumber' => 'HBT67890',
-                'orderDate' => '2023-08-02',
-                'status' => 'COMPLETED',
+                'transactionId' => 'TRX67890',
+                'transactionDate' => '2023-08-02',
+                'amount' => -15.50,
+                'type' => 'COMMISSION',
             ],
         ],
         'totalElements' => 2,
@@ -52,49 +54,38 @@ test('getCompletedOrders doğru şekilde çalışır', function () {
         ->once()
         ->with(
             'GET', 
-            '/orders/merchant/completed-orders', 
+            '/finance/merchant/transactions', 
             Mockery::on(function($options) {
                 return isset($options['query']['merchantId']) && 
                        $options['query']['merchantId'] === 'test_merchant_id' &&
                        isset($options['query']['page']) &&
-                       isset($options['query']['size']);
+                       isset($options['query']['size']) &&
+                       isset($options['query']['startDate']) &&
+                       isset($options['query']['endDate']);
             })
         )
         ->andReturn($response);
     
-    $order_service = new OrderService($mock_api);
-    $result = $order_service->getCompletedOrders();
+    $finance_service = new FinanceService($mock_api);
+    $result = $finance_service->getTransactions([
+        'startDate' => '2023-08-01',
+        'endDate' => '2023-08-31',
+    ]);
     
     expect($result)->toBeArray();
     expect($result)->toHaveKey('content');
     expect($result['content'])->toHaveCount(2);
-    expect($result['content'][0]['orderNumber'])->toBe('HBT12345');
+    expect($result['content'][0]['transactionId'])->toBe('TRX12345');
 });
 
-test('getOrderDetail doğru şekilde çalışır', function () {
+test('getPaymentSummary doğru şekilde çalışır', function () {
     $mock_client = Mockery::mock(Client::class);
     $mock_api = Mockery::mock(HepsiburadaApiInterface::class);
     
     $expected_response = [
-        'orderNumber' => 'HBT12345',
-        'orderDate' => '2023-08-01',
-        'status' => 'COMPLETED',
-        'items' => [
-            [
-                'id' => 101,
-                'productName' => 'Test Ürün',
-                'quantity' => 2,
-                'price' => 149.99,
-            ]
-        ],
-        'buyer' => [
-            'name' => 'Test Müşteri',
-            'email' => 'test@example.com',
-        ],
-        'shippingAddress' => [
-            'city' => 'Istanbul',
-            'district' => 'Kadıköy',
-        ],
+        'balance' => 1235.75,
+        'currency' => 'TRY',
+        'lastUpdateDate' => '2023-08-15',
     ];
     
     $response = new Response(200, [], json_encode($expected_response));
@@ -109,32 +100,30 @@ test('getOrderDetail doğru şekilde çalışır', function () {
         ->once()
         ->with(
             'GET', 
-            '/orders/merchant/order-detail', 
+            '/finance/merchant/payment-summary', 
             Mockery::on(function($options) {
                 return isset($options['query']['merchantId']) && 
-                       $options['query']['merchantId'] === 'test_merchant_id' &&
-                       isset($options['query']['orderNumber']) &&
-                       $options['query']['orderNumber'] === 'HBT12345';
+                       $options['query']['merchantId'] === 'test_merchant_id';
             })
         )
         ->andReturn($response);
     
-    $order_service = new OrderService($mock_api);
-    $result = $order_service->getOrderDetail('HBT12345');
+    $finance_service = new FinanceService($mock_api);
+    $result = $finance_service->getPaymentSummary();
     
     expect($result)->toBeArray();
-    expect($result['orderNumber'])->toBe('HBT12345');
-    expect($result['items'])->toHaveCount(1);
-    expect($result['buyer']['name'])->toBe('Test Müşteri');
+    expect($result['balance'])->toBe(1235.75);
+    expect($result['currency'])->toBe('TRY');
 });
 
-test('shipOrderItems doğru şekilde çalışır', function () {
+test('getPaymentDetails doğru şekilde çalışır', function () {
     $mock_client = Mockery::mock(Client::class);
     $mock_api = Mockery::mock(HepsiburadaApiInterface::class);
     
     $expected_response = [
         'success' => true,
-        'message' => 'Package has been marked as shipped',
+        'message' => 'Ödeme detayları',
+        'paymentId' => 'PAY12345',
     ];
     
     $response = new Response(200, [], json_encode($expected_response));
@@ -142,29 +131,27 @@ test('shipOrderItems doğru şekilde çalışır', function () {
     $mock_api->shouldReceive('getHttpClient')
         ->andReturn($mock_client);
     
-    $shipping_data = [
-        'merchantId' => 'test_merchant_id',
-        'packageNumber' => 'PKG12345',
-        'shippingCompany' => 'Test Kargo',
-        'trackingNumber' => 'TRK789012',
-    ];
+    $mock_api->shouldReceive('getMerchantId')
+        ->andReturn('test_merchant_id');
     
     $mock_client->shouldReceive('request')
         ->once()
         ->with(
-            'POST', 
-            '/orders/merchant/update-package-status/intransit', 
-            Mockery::on(function($options) use ($shipping_data) {
-                return isset($options['json']) && 
-                       $options['json'] === $shipping_data;
+            'GET', 
+            '/finance/merchant/payment-details', 
+            Mockery::on(function($options) {
+                return isset($options['query']['merchantId']) && 
+                       $options['query']['merchantId'] === 'test_merchant_id' &&
+                       isset($options['query']['paymentId']) &&
+                       $options['query']['paymentId'] === 'PAY12345';
             })
         )
         ->andReturn($response);
     
-    $order_service = new OrderService($mock_api);
-    $result = $order_service->shipOrderItems($shipping_data);
+    $finance_service = new FinanceService($mock_api);
+    $result = $finance_service->getPaymentDetails('PAY12345');
     
     expect($result)->toBeArray();
     expect($result['success'])->toBeTrue();
-    expect($result['message'])->toBe('Package has been marked as shipped');
+    expect($result['paymentId'])->toBe('PAY12345');
 }); 

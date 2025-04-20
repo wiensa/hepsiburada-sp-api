@@ -5,6 +5,7 @@ namespace HepsiburadaApi\HepsiburadaSpApi\Traits;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
+use HepsiburadaApi\HepsiburadaSpApi\Exceptions\ApiException;
 use Illuminate\Support\Facades\Log;
 
 trait ApiRequest
@@ -74,6 +75,7 @@ trait ApiRequest
      * @param array $headers İsteğe özel HTTP başlıkları
      * @param int|null $retry_attempt Mevcut yeniden deneme sayısı
      * @return array|null İstek yanıtı
+     * @throws ApiException API hatası oluştuğunda
      */
     protected function request(
         string $method, 
@@ -169,13 +171,14 @@ trait ApiRequest
      * @param string $method HTTP metodu
      * @param string $endpoint İstek yapılan endpoint
      * @param array $options İstek seçenekleri
-     * @return void
+     * @return never
+     * @throws ApiException Her zaman bir ApiException fırlatır
      */
-    protected function handleRequestException(GuzzleException $exception, string $method, string $endpoint, array $options): void
+    protected function handleRequestException(GuzzleException $exception, string $method, string $endpoint, array $options): never
     {
         $status_code = $exception instanceof RequestException && $exception->hasResponse() 
             ? $exception->getResponse()->getStatusCode() 
-            : 0;
+            : 500;
 
         $response_body = $exception instanceof RequestException && $exception->hasResponse() 
             ? $exception->getResponse()->getBody()->getContents() 
@@ -191,11 +194,29 @@ trait ApiRequest
         ]);
 
         // Hata yanıtını JSON olarak çözümlemeyi dene
+        $api_code = null;
+        $response = null;
+        
         if ($response_body) {
             $decoded_response = json_decode($response_body, true);
             if (json_last_error() === JSON_ERROR_NONE) {
-                return;
+                $response = $decoded_response;
+                // Hata kodunu belirle (API'nin döndürdüğü formata göre uyarlanabilir)
+                $api_code = $response['errorCode'] ?? $response['code'] ?? null;
             }
         }
+
+        $error_message = $exception->getMessage();
+        throw new ApiException(
+            $error_message,
+            $status_code,
+            $api_code,
+            $response ?? [
+                'method' => $method,
+                'endpoint' => $endpoint,
+                'error' => $error_message
+            ],
+            $exception
+        );
     }
 } 

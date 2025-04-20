@@ -4,6 +4,7 @@ namespace HepsiburadaApi\HepsiburadaSpApi\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use HepsiburadaApi\HepsiburadaSpApi\HepsiburadaApi;
+use HepsiburadaApi\HepsiburadaSpApi\Contracts\HepsiburadaApiInterface;
 use HepsiburadaApi\HepsiburadaSpApi\Console\InstallCommand;
 use HepsiburadaApi\HepsiburadaSpApi\Console\TestConnectionCommand;
 
@@ -95,11 +96,16 @@ class HepsiburadaApiServiceProvider extends ServiceProvider
      */
     private function registerBindings(): void
     {
-        $this->app->singleton(HepsiburadaApi::class, function ($app) {
+        $this->app->singleton(HepsiburadaApiInterface::class, function ($app) {
             return new HepsiburadaApi(config('hepsiburada-api'));
         });
 
+        // HepsiburadaApi sınıfını da kaydeder
+        $this->app->singleton(HepsiburadaApi::class, function ($app) {
+            return $app->make(HepsiburadaApiInterface::class);
+        });
+
         // Paketin alias olarak kısa yoldan erişimini sağlar
-        $this->app->alias(HepsiburadaApi::class, 'hepsiburada-api');
+        $this->app->alias(HepsiburadaApiInterface::class, 'hepsiburada-api');
     }
 }

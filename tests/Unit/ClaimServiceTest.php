@@ -7,16 +7,16 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
 use HepsiburadaApi\HepsiburadaSpApi\Contracts\HepsiburadaApiInterface;
 use HepsiburadaApi\HepsiburadaSpApi\HepsiburadaApi;
-use HepsiburadaApi\HepsiburadaSpApi\Services\OrderService;
+use HepsiburadaApi\HepsiburadaSpApi\Services\ClaimService;
 
-test('OrderService sınıfı doğru şekilde başlatılır', function () {
+test('ClaimService sınıfı doğru şekilde başlatılır', function () {
     $api = new HepsiburadaApi(getConfig());
-    $order_service = new OrderService($api);
+    $claim_service = new ClaimService($api);
 
-    expect($order_service)->toBeInstanceOf(OrderService::class);
+    expect($claim_service)->toBeInstanceOf(ClaimService::class);
 });
 
-test('getCompletedOrders doğru şekilde çalışır', function () {
+test('getClaims doğru şekilde çalışır', function () {
     $mock_client = Mockery::mock(Client::class);
     $mock_api = Mockery::mock(HepsiburadaApiInterface::class);
     
@@ -24,15 +24,15 @@ test('getCompletedOrders doğru şekilde çalışır', function () {
         'content' => [
             [
                 'id' => 1,
-                'orderNumber' => 'HBT12345',
-                'orderDate' => '2023-08-01',
-                'status' => 'COMPLETED',
+                'claimNumber' => 'CLM12345',
+                'claimDate' => '2023-08-01',
+                'status' => 'OPEN',
             ],
             [
                 'id' => 2,
-                'orderNumber' => 'HBT67890',
-                'orderDate' => '2023-08-02',
-                'status' => 'COMPLETED',
+                'claimNumber' => 'CLM67890',
+                'claimDate' => '2023-08-02',
+                'status' => 'CLOSED',
             ],
         ],
         'totalElements' => 2,
@@ -52,7 +52,7 @@ test('getCompletedOrders doğru şekilde çalışır', function () {
         ->once()
         ->with(
             'GET', 
-            '/orders/merchant/completed-orders', 
+            '/claims/merchant/list', 
             Mockery::on(function($options) {
                 return isset($options['query']['merchantId']) && 
                        $options['query']['merchantId'] === 'test_merchant_id' &&
@@ -62,39 +62,26 @@ test('getCompletedOrders doğru şekilde çalışır', function () {
         )
         ->andReturn($response);
     
-    $order_service = new OrderService($mock_api);
-    $result = $order_service->getCompletedOrders();
+    $claim_service = new ClaimService($mock_api);
+    $result = $claim_service->getClaims();
     
     expect($result)->toBeArray();
     expect($result)->toHaveKey('content');
     expect($result['content'])->toHaveCount(2);
-    expect($result['content'][0]['orderNumber'])->toBe('HBT12345');
+    expect($result['content'][0]['claimNumber'])->toBe('CLM12345');
 });
 
-test('getOrderDetail doğru şekilde çalışır', function () {
+test('getClaimDetails doğru şekilde çalışır', function () {
     $mock_client = Mockery::mock(Client::class);
     $mock_api = Mockery::mock(HepsiburadaApiInterface::class);
     
     $expected_response = [
-        'orderNumber' => 'HBT12345',
-        'orderDate' => '2023-08-01',
-        'status' => 'COMPLETED',
-        'items' => [
-            [
-                'id' => 101,
-                'productName' => 'Test Ürün',
-                'quantity' => 2,
-                'price' => 149.99,
-            ]
-        ],
-        'buyer' => [
-            'name' => 'Test Müşteri',
-            'email' => 'test@example.com',
-        ],
-        'shippingAddress' => [
-            'city' => 'Istanbul',
-            'district' => 'Kadıköy',
-        ],
+        'claimNumber' => 'CLM12345',
+        'claimDate' => '2023-08-01',
+        'status' => 'OPEN',
+        'reason' => 'Ürün hasarlı geldi',
+        'orderNumber' => 'ORD123456',
+        'customerNotes' => 'Kutu içinde hasarlıydı',
     ];
     
     $response = new Response(200, [], json_encode($expected_response));
@@ -109,32 +96,31 @@ test('getOrderDetail doğru şekilde çalışır', function () {
         ->once()
         ->with(
             'GET', 
-            '/orders/merchant/order-detail', 
+            '/claims/merchant/details', 
             Mockery::on(function($options) {
                 return isset($options['query']['merchantId']) && 
                        $options['query']['merchantId'] === 'test_merchant_id' &&
-                       isset($options['query']['orderNumber']) &&
-                       $options['query']['orderNumber'] === 'HBT12345';
+                       isset($options['query']['claimId']) &&
+                       $options['query']['claimId'] === 'CLM12345';
             })
         )
         ->andReturn($response);
     
-    $order_service = new OrderService($mock_api);
-    $result = $order_service->getOrderDetail('HBT12345');
+    $claim_service = new ClaimService($mock_api);
+    $result = $claim_service->getClaimDetails('CLM12345');
     
     expect($result)->toBeArray();
-    expect($result['orderNumber'])->toBe('HBT12345');
-    expect($result['items'])->toHaveCount(1);
-    expect($result['buyer']['name'])->toBe('Test Müşteri');
+    expect($result['claimNumber'])->toBe('CLM12345');
+    expect($result['reason'])->toBe('Ürün hasarlı geldi');
 });
 
-test('shipOrderItems doğru şekilde çalışır', function () {
+test('respondToClaim doğru şekilde çalışır', function () {
     $mock_client = Mockery::mock(Client::class);
     $mock_api = Mockery::mock(HepsiburadaApiInterface::class);
     
     $expected_response = [
         'success' => true,
-        'message' => 'Package has been marked as shipped',
+        'message' => 'Talep yanıtı başarıyla gönderildi',
     ];
     
     $response = new Response(200, [], json_encode($expected_response));
@@ -142,29 +128,32 @@ test('shipOrderItems doğru şekilde çalışır', function () {
     $mock_api->shouldReceive('getHttpClient')
         ->andReturn($mock_client);
     
-    $shipping_data = [
+    $mock_api->shouldReceive('getMerchantId')
+        ->andReturn('test_merchant_id');
+    
+    $claim_data = [
         'merchantId' => 'test_merchant_id',
-        'packageNumber' => 'PKG12345',
-        'shippingCompany' => 'Test Kargo',
-        'trackingNumber' => 'TRK789012',
+        'claimNumber' => 'CLM12345',
+        'responseType' => 'ACCEPT',
+        'notes' => 'Müşteri haklı, ürün değişimi yapılacak',
     ];
     
     $mock_client->shouldReceive('request')
         ->once()
         ->with(
             'POST', 
-            '/orders/merchant/update-package-status/intransit', 
-            Mockery::on(function($options) use ($shipping_data) {
+            '/claims/merchant/respond', 
+            Mockery::on(function($options) use ($claim_data) {
                 return isset($options['json']) && 
-                       $options['json'] === $shipping_data;
+                       $options['json'] === $claim_data;
             })
         )
         ->andReturn($response);
     
-    $order_service = new OrderService($mock_api);
-    $result = $order_service->shipOrderItems($shipping_data);
+    $claim_service = new ClaimService($mock_api);
+    $result = $claim_service->respondToClaim($claim_data);
     
     expect($result)->toBeArray();
     expect($result['success'])->toBeTrue();
-    expect($result['message'])->toBe('Package has been marked as shipped');
+    expect($result['message'])->toBe('Talep yanıtı başarıyla gönderildi');
 }); 

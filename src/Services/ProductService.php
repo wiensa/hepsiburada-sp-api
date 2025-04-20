@@ -2,7 +2,7 @@
 
 namespace HepsiburadaApi\HepsiburadaSpApi\Services;
 
-use HepsiburadaApi\HepsiburadaSpApi\HepsiburadaApi;
+use HepsiburadaApi\HepsiburadaSpApi\Contracts\HepsiburadaApiInterface;
 use HepsiburadaApi\HepsiburadaSpApi\Traits\ApiRequest;
 
 class ProductService
@@ -12,9 +12,9 @@ class ProductService
     /**
      * API istemcisi
      *
-     * @var HepsiburadaApi
+     * @var HepsiburadaApiInterface
      */
-    protected HepsiburadaApi $api;
+    protected HepsiburadaApiInterface $api;
     
     /**
      * HTTP istemcisi
@@ -24,7 +24,7 @@ class ProductService
     /**
      * ProductService sınıfı yapıcı fonksiyonu
      */
-    public function __construct(HepsiburadaApi $api)
+    public function __construct(HepsiburadaApiInterface $api)
     {
         $this->api = $api;
         $this->http_client = $api->getHttpClient();
@@ -36,7 +36,7 @@ class ProductService
      * @param array $product_data Ürün verileri
      * @return array|null
      */
-    public function sendProductData(array $product_data): ?array
+    public function createProduct(array $product_data): ?array
     {
         return $this->post('/product/api/products', $product_data);
     }
@@ -58,7 +58,7 @@ class ProductService
      * @param string $tracking_id Takip ID
      * @return array|null
      */
-    public function deleteAwaitingActionProduct(string $tracking_id): ?array
+    public function deleteProduct(string $tracking_id): ?array
     {
         return $this->post('/product/api/products/delete', [
             'trackingId' => $tracking_id,
@@ -95,7 +95,7 @@ class ProductService
     }
 
     /**
-     * Ürüne ait statü bilgisi çekme
+     * Ürünlere ait statü bilgisi çekme
      *
      * @param array $barcode_list Barkod listesi
      * @param string|null $merchant_id Satıcı ID (opsiyonel, belirtilmezse config'ten alınır)
@@ -112,7 +112,7 @@ class ProductService
     }
 
     /**
-     * Statü bazlı ürün bilgisi çekme
+     * Statü bazlı ürünleri listeler
      *
      * @param string $status Statü
      * @param int $page Sayfa numarası
@@ -143,7 +143,7 @@ class ProductService
      * @param string|null $merchant_id Satıcı ID (opsiyonel, belirtilmezse config'ten alınır)
      * @return array|null
      */
-    public function approveMatchedStatus(string $barcode, ?string $merchant_id = null): ?array
+    public function approveProduct(string $barcode, ?string $merchant_id = null): ?array
     {
         $data = [
             'barcode' => $barcode,
@@ -160,7 +160,7 @@ class ProductService
      * @param string|null $merchant_id Satıcı ID (opsiyonel, belirtilmezse config'ten alınır)
      * @return array|null
      */
-    public function rejectMatchedStatus(string $barcode, ?string $merchant_id = null): ?array
+    public function rejectProduct(string $barcode, ?string $merchant_id = null): ?array
     {
         $data = [
             'barcode' => $barcode,
@@ -171,14 +171,14 @@ class ProductService
     }
 
     /**
-     * Mağaza bazlı ürün bilgisi listeleme
+     * Tüm ürünleri listeler
      *
      * @param int $page Sayfa numarası
      * @param int $size Sayfa boyutu
      * @param string|null $merchant_id Satıcı ID (opsiyonel, belirtilmezse config'ten alınır)
      * @return array|null
      */
-    public function getProductsByMerchant(
+    public function getProducts(
         int $page = 0, 
         int $size = 100, 
         ?string $merchant_id = null

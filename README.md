@@ -67,7 +67,7 @@ use HepsiburadaApi;
 $categories = HepsiburadaApi::categories()->getCategories();
 
 // Ürün bilgilerini gönder
-$response = HepsiburadaApi::products()->sendProductData([
+$response = HepsiburadaApi::products()->createProduct([
     // Ürün verileri
 ]);
 
@@ -120,7 +120,7 @@ $attributeValues = HepsiburadaApi::categories()->getAttributeValues('attribute_i
 
 ```php
 // Ürün bilgisi gönder
-$response = HepsiburadaApi::products()->sendProductData([
+$response = HepsiburadaApi::products()->createProduct([
     'categoryId' => 'kategori_id',
     'merchant' => 'satici_id',
     'attributes' => [
@@ -130,6 +130,11 @@ $response = HepsiburadaApi::products()->sendProductData([
         // Ürün görselleri
     ],
     // Diğer ürün bilgileri
+]);
+
+// Hızlı ürün yükleme
+$response = HepsiburadaApi::products()->quickUpload([
+    // Ürün verileri
 ]);
 
 // Ürün durumunu sorgula
@@ -144,8 +149,8 @@ $products = HepsiburadaApi::products()->getProductsByStatus('APPROVED');
 ```php
 // Listing bilgilerini sorgula
 $listings = HepsiburadaApi::listings()->getListings([
-    'offset' => 0,
-    'limit' => 50
+    'page' => 0,
+    'size' => 50
 ]);
 
 // Fiyat güncelle
@@ -179,29 +184,34 @@ $orders = HepsiburadaApi::orders()->getCompletedOrders([
     'endDate' => '2023-12-31'
 ]);
 
+// İptal edilen siparişleri listele
+$cancelledOrders = HepsiburadaApi::orders()->getCancelledOrders();
+
+// Bekleyen siparişleri listele
+$pendingOrders = HepsiburadaApi::orders()->getPendingOrders();
+
 // Sipariş detaylarını al
-$orderDetails = HepsiburadaApi::orders()->getOrderDetails('siparis_numarasi');
+$orderDetails = HepsiburadaApi::orders()->getOrderDetail('siparis_numarasi');
 
-// Ürünleri paketle
-$response = HepsiburadaApi::orders()->packageItems([
-    'merchantId' => 'satici_id',
-    'packageQuantity' => 1,
-    'deci' => 3.5,
-    'lineItems' => [
-        // Paketlenecek ürün kalemleri
-    ]
-]);
-
-// Kargoya verme bilgisini ilet
-$response = HepsiburadaApi::orders()->markAsShipped([
+// Siparişi kargoya ver
+$response = HepsiburadaApi::orders()->shipOrderItems([
     'merchantId' => 'satici_id',
     'packageNumber' => 'paket_numarasi',
     'shippingCompany' => 'kargo_firmasi',
     'trackingNumber' => 'takip_numarasi'
 ]);
+
+// Paket içeriklerini hazırlama
+$response = HepsiburadaApi::orders()->packageItems([
+    'merchantId' => 'satici_id',
+    'packageNumber' => 'paket_numarasi',
+    'items' => [
+        // Paketlenecek ürün kalemleri
+    ]
+]);
 ```
 
-### Talep ve İade İşlemleri (Yeni)
+### Talep ve İade İşlemleri
 
 ```php
 // Tüm talepleri listele
@@ -212,22 +222,28 @@ $claimDetails = HepsiburadaApi::claims()->getClaimDetails('claim_id');
 
 // Talebe yanıt gönder
 $response = HepsiburadaApi::claims()->respondToClaim([
-    'claimId' => 'claim_id',
+    'claimNumber' => 'claim_number',
     'merchantId' => 'merchant_id',
-    'response' => 'ACCEPTED',
-    'message' => 'Talebiniz onaylandı'
+    'responseType' => 'ACCEPT',
+    'notes' => 'Talebiniz onaylandı'
 ]);
 
 // İade taleplerini listele
 $returnRequests = HepsiburadaApi::claims()->getReturnRequests();
+
+// İade talebini onayla
+$returnApproval = HepsiburadaApi::claims()->approveReturnRequest([
+    'returnId' => 'return_id',
+    'merchantId' => 'merchant_id'
+]);
 ```
 
-### Finans ve Muhasebe İşlemleri (Yeni)
+### Finans ve Muhasebe İşlemleri
 
 ```php
 // İşlem geçmişini listele
 $transactions = HepsiburadaApi::finances()->getTransactions([
-    'beginDate' => '2023-01-01',
+    'startDate' => '2023-01-01',
     'endDate' => '2023-12-31'
 ]);
 
@@ -239,9 +255,12 @@ $paymentDetails = HepsiburadaApi::finances()->getPaymentDetails('payment_id');
 
 // Fatura bilgilerini listele
 $invoices = HepsiburadaApi::finances()->getInvoices();
+
+// Komisyon bilgilerini al
+$commissions = HepsiburadaApi::finances()->getCommissions();
 ```
 
-### Raporlama İşlemleri (Yeni)
+### Raporlama İşlemleri
 
 ```php
 // Satış performans raporu al
@@ -256,32 +275,53 @@ $orderReport = HepsiburadaApi::reports()->getOrderReport([
 // Ürün performans raporu al
 $productReport = HepsiburadaApi::reports()->getProductPerformance();
 
+// Stok durumu raporu al
+$inventoryReport = HepsiburadaApi::reports()->getInventoryReport();
+
 // Özel rapor oluştur
 $customReport = HepsiburadaApi::reports()->createCustomReport([
-    'reportType' => 'CUSTOM',
-    'dateRange' => 'LAST_30_DAYS',
-    'fields' => ['orderNumber', 'orderDate', 'status']
+    'merchantId' => 'merchant_id',
+    'reportType' => 'SALES',
+    'startDate' => '2023-01-01',
+    'endDate' => '2023-12-31',
+    'format' => 'CSV'
 ]);
+
+// Rapor durumunu sorgula
+$reportStatus = HepsiburadaApi::reports()->getReportStatus('report_id');
+
+// Rapor indirme bağlantısı al
+$downloadLink = HepsiburadaApi::reports()->getReportDownloadLink('report_id');
 ```
 
-### Taşıma ve Lojistik İşlemleri (Yeni)
+### Taşıma ve Lojistik İşlemleri
 
 ```php
 // Kargo şirketlerini listele
 $carriers = HepsiburadaApi::logistics()->getCarriers();
 
+// Kargo ücretlerini sorgula
+$shippingRates = HepsiburadaApi::logistics()->getShippingRates([
+    'shippingCompanyId' => '1'
+]);
+
 // Kargo takip bilgilerini güncelle
 $trackingUpdate = HepsiburadaApi::logistics()->updateTrackingInfo([
     'packageNumber' => 'package_number',
     'trackingNumber' => 'tracking_number',
-    'carrierCode' => 'ARAS'
+    'carrierId' => '1'
 ]);
 
 // Kargo etiketi oluştur
 $shippingLabel = HepsiburadaApi::logistics()->createShippingLabel([
+    'merchantId' => 'merchant_id',
+    'orderId' => 'order_id',
     'packageNumber' => 'package_number',
-    'format' => 'PDF'
+    'shippingCompanyId' => 1
 ]);
+
+// Teslimat bölgesi bilgilerini sorgula
+$deliveryZones = HepsiburadaApi::logistics()->getDeliveryZones();
 ```
 
 ## Lisans

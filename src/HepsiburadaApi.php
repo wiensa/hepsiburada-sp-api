@@ -2,6 +2,7 @@
 
 namespace HepsiburadaApi\HepsiburadaSpApi;
 
+use HepsiburadaApi\HepsiburadaSpApi\Contracts\HepsiburadaApiInterface;
 use HepsiburadaApi\HepsiburadaSpApi\Traits\ApiRequest;
 use HepsiburadaApi\HepsiburadaSpApi\Services\CategoryService;
 use HepsiburadaApi\HepsiburadaSpApi\Services\ClaimService;
@@ -12,7 +13,7 @@ use HepsiburadaApi\HepsiburadaSpApi\Services\OrderService;
 use HepsiburadaApi\HepsiburadaSpApi\Services\ProductService;
 use HepsiburadaApi\HepsiburadaSpApi\Services\ReportService;
 
-final class HepsiburadaApi
+final class HepsiburadaApi implements HepsiburadaApiInterface
 {
     use ApiRequest;
 
@@ -153,7 +154,7 @@ final class HepsiburadaApi
         ?string $password = null,
         ?string $merchant_id = null,
         ?string $base_url = null
-    ): self {
+    ): HepsiburadaApiInterface {
         if ($username !== null) {
             $this->username = $username;
         }

@@ -80,6 +80,8 @@ return array(
     'Jean85\\' => array($vendorDir . '/jean85/pretty-package-versions/src'),
     'Illuminate\\Support\\' => array($vendorDir . '/laravel/framework/src/Illuminate/Macroable', $vendorDir . '/laravel/framework/src/Illuminate/Collections', $vendorDir . '/laravel/framework/src/Illuminate/Conditionable'),
     'Illuminate\\' => array($vendorDir . '/laravel/framework/src/Illuminate'),
+    'HepsiburadaApi\\HepsiburadaSpApi\\Tests\\' => array($baseDir . '/tests'),
+    'HepsiburadaApi\\HepsiburadaSpApi\\' => array($baseDir . '/src'),
     'GuzzleHttp\\UriTemplate\\' => array($vendorDir . '/guzzlehttp/uri-template/src'),
     'GuzzleHttp\\Psr7\\' => array($vendorDir . '/guzzlehttp/psr7/src'),
     'GuzzleHttp\\Promise\\' => array($vendorDir . '/guzzlehttp/promises/src'),
@@ -103,6 +105,4 @@ return array(
     'Carbon\\' => array($vendorDir . '/nesbot/carbon/src/Carbon'),
     'Brick\\Math\\' => array($vendorDir . '/brick/math/src'),
     'App\\' => array($vendorDir . '/laravel/pint/app'),
-    'AlgoYounes\\Skeleton\\Tests\\' => array($baseDir . '/tests'),
-    'AlgoYounes\\Skeleton\\' => array($baseDir . '/src'),
 );

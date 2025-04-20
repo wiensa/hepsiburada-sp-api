@@ -2,7 +2,7 @@
 
 namespace HepsiburadaApi\HepsiburadaSpApi\Services;
 
-use HepsiburadaApi\HepsiburadaSpApi\HepsiburadaApi;
+use HepsiburadaApi\HepsiburadaSpApi\Contracts\HepsiburadaApiInterface;
 use HepsiburadaApi\HepsiburadaSpApi\Traits\ApiRequest;
 
 class OrderService
@@ -12,9 +12,9 @@ class OrderService
     /**
      * API istemcisi
      *
-     * @var HepsiburadaApi
+     * @var HepsiburadaApiInterface
      */
-    protected HepsiburadaApi $api;
+    protected HepsiburadaApiInterface $api;
     
     /**
      * HTTP istemcisi
@@ -24,7 +24,7 @@ class OrderService
     /**
      * OrderService sınıfı yapıcı fonksiyonu
      */
-    public function __construct(HepsiburadaApi $api)
+    public function __construct(HepsiburadaApiInterface $api)
     {
         $this->api = $api;
         $this->http_client = $api->getHttpClient();
@@ -167,13 +167,13 @@ class OrderService
     }
 
     /**
-     * Siparişe ait detayları listeler
+     * Siparişe ait detayları getirir
      *
      * @param string $order_number Sipariş numarası
      * @param string|null $merchant_id Satıcı ID (opsiyonel, belirtilmezse config'ten alınır)
      * @return array|null
      */
-    public function getOrderDetails(string $order_number, ?string $merchant_id = null): ?array
+    public function getOrderDetail(string $order_number, ?string $merchant_id = null): ?array
     {
         $query = [
             'merchantId' => $merchant_id ?? $this->api->getMerchantId(),
@@ -184,7 +184,7 @@ class OrderService
     }
 
     /**
-     * Paket için kargo bilgilerini listeler
+     * Paket için kargo bilgilerini getirir
      *
      * @param string $package_number Paket numarası
      * @param string|null $merchant_id Satıcı ID (opsiyonel, belirtilmezse config'ten alınır)
@@ -229,7 +229,7 @@ class OrderService
     }
 
     /**
-     * Teslimat statüsü iletir (Teslim Edildi)
+     * Sipariş paketini teslim edildi olarak işaretler
      *
      * @param array $delivery_data Teslimat verileri
      * @return array|null
@@ -240,20 +240,20 @@ class OrderService
     }
 
     /**
-     * Teslimat statüsü iletir (Kargoda)
+     * Sipariş paketini kargoda olarak işaretler
      *
      * @param array $shipping_data Kargolama verileri
      * @return array|null
      */
-    public function markAsShipped(array $shipping_data): ?array
+    public function shipOrderItems(array $shipping_data): ?array
     {
         return $this->post('/orders/merchant/update-package-status/intransit', $shipping_data);
     }
-
+    
     /**
-     * Teslimat statüsü iletir (Teslim Edilemedi)
+     * Sipariş paketini teslim edilemedi olarak işaretler
      *
-     * @param array $undelivered_data Teslim edilemedi verileri
+     * @param array $undelivered_data Teslim edilememe verileri
      * @return array|null
      */
     public function markAsUndelivered(array $undelivered_data): ?array
@@ -262,92 +262,92 @@ class OrderService
     }
 
     /**
-     * Fatura linki gönderir
+     * Fatura linkini gönderir
      *
      * @param array $invoice_data Fatura verileri
      * @return array|null
      */
     public function sendInvoiceLink(array $invoice_data): ?array
     {
-        return $this->post('/orders/merchant/invoice-links', $invoice_data);
+        return $this->post('/orders/merchant/invoice-link', $invoice_data);
     }
 
     /**
-     * Paketi böler
+     * Paket bölme işlemi yapar
      *
      * @param array $split_data Bölme verileri
      * @return array|null
      */
     public function splitPackage(array $split_data): ?array
     {
-        return $this->post('/orders/merchant/package-split', $split_data);
+        return $this->post('/orders/merchant/split-package', $split_data);
     }
 
     /**
-     * Paketi açar (unpack)
+     * Paket bozma işlemi yapar
      *
-     * @param array $unpack_data Paket açma verileri
+     * @param array $unpack_data Bozma verileri
      * @return array|null
      */
     public function unpackPackage(array $unpack_data): ?array
     {
-        return $this->post('/orders/merchant/package-unpack', $unpack_data);
+        return $this->post('/orders/merchant/unpack-package', $unpack_data);
     }
-    
+
     /**
-     * İptal bilgisini iletir
+     * İptal bilgisi gönderir
      *
      * @param array $cancel_data İptal verileri
      * @return array|null
      */
-    public function sendCancellationInfo(array $cancel_data): ?array
+    public function cancelOrder(array $cancel_data): ?array
     {
-        return $this->post('/orders/merchant/cancel-info', $cancel_data);
+        return $this->post('/orders/merchant/cancel-order-line-items', $cancel_data);
     }
 
     /**
-     * İade kabul bilgisini iletir
+     * İade onaylama işlemi yapar
      *
-     * @param array $return_approval_data İade kabul verileri
+     * @param array $return_approval_data İade onay verileri
      * @return array|null
      */
     public function approveReturn(array $return_approval_data): ?array
     {
-        return $this->post('/orders/merchant/return-approval', $return_approval_data);
+        return $this->post('/returns/merchant/approve', $return_approval_data);
     }
 
     /**
-     * İade ret bilgisini iletir
+     * İade reddetme işlemi yapar
      *
-     * @param array $return_rejection_data İade ret verileri
+     * @param array $return_rejection_data İade red verileri
      * @return array|null
      */
     public function rejectReturn(array $return_rejection_data): ?array
     {
-        return $this->post('/orders/merchant/return-rejection', $return_rejection_data);
+        return $this->post('/returns/merchant/reject', $return_rejection_data);
     }
 
     /**
-     * İade detaylarını alır
+     * İade detaylarını getirir
      *
      * @param string $return_id İade ID
      * @param string|null $merchant_id Satıcı ID (opsiyonel, belirtilmezse config'ten alınır)
      * @return array|null
      */
-    public function getReturnDetails(string $return_id, ?string $merchant_id = null): ?array
+    public function getReturnDetail(string $return_id, ?string $merchant_id = null): ?array
     {
         $query = [
             'merchantId' => $merchant_id ?? $this->api->getMerchantId(),
             'returnId' => $return_id,
         ];
 
-        return $this->get('/orders/merchant/return-details', $query);
+        return $this->get('/returns/merchant/detail', $query);
     }
-    
+
     /**
-     * Sipariş özeti bilgilerini alır
+     * Sipariş özetini getirir
      *
-     * @param array $params Sorgu parametreleri (tarih aralığı vs.)
+     * @param array $params Sorgu parametreleri
      * @return array|null
      */
     public function getOrderSummary(array $params = []): ?array
